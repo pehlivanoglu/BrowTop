@@ -1,10 +1,56 @@
 import asyncio
+from datetime import datetime
 import json
 import pathlib
 import ssl
 
 import psutil
 from aiohttp import web
+
+def get_process_info(proc):
+    """
+    Extracts information about a process.
+    """
+    try:
+        info = proc.info
+        return {
+            "user": info.get("username"),
+            "pid": info.get("pid"),
+            "cpu": f"{info.get('cpu_percent', 0):.1f}",
+            "memory": f"{info.get('memory_percent', 0):.1f}",
+            "vsz": f"{info.get('memory_info').vms // 1024}" if info.get("memory_info") else "0",
+            "rss": f"{info.get('memory_info').rss // 1024}" if info.get("memory_info") else "0",
+            "tty": "?",
+            "stat": info.get("status", "?")[0].upper(),
+            "start": datetime.fromtimestamp(info.get("create_time", 0)).strftime("%H:%M"),
+            "time": f"{info.get('cpu_times').user+info.get('cpu_times').system}" if info.get("cpu_times") else "0",
+            "command": info.get("name"),
+        }
+    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+        return {
+            "user": "N/A",
+            "pid": "N/A",
+            "cpu": "N/A",
+            "memory": "N/A",
+            "vsz": "N/A",
+            "rss": "N/A",
+            "tty": "N/A",
+            "stat": "N/A",
+            "start": "N/A",
+            "time": "N/A",
+            "command": "N/A",
+        }
+
+async def list_of_processes():
+    """
+    Asynchronously retrieves a list of processes with their details.
+    """
+    tasks = []
+    for proc in psutil.process_iter(['username', 'pid', 'cpu_percent', 'memory_percent', 'memory_info', 'status', 'create_time', 'name', 'cpu_times']):
+        tasks.append(asyncio.to_thread(get_process_info, proc))
+
+    results = await asyncio.gather(*tasks)
+    return [result for result in results if result is not None]
 
 
 async def hello(request):
@@ -72,6 +118,10 @@ def run():
     web.run_app(app, port=8765, ssl_context=ssl_context)
 
 
+async def main():
+    print(await list_of_processes())
+    # print("Server started at wss://localhost:8765")
+    # run()
+
 if __name__ == "__main__":
-    print("Server started at wss://localhost:8765")
-    run()
+    asyncio.run(main())
