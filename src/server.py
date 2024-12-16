@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import pathlib
 import ssl
+import os
 
 import psutil
 from aiohttp import web
@@ -74,6 +75,65 @@ async def get_system_stats():
     }
     return stats
 
+def process_summary():
+    processes = list(psutil.process_iter())
+    states = {'running': 0, 'sleeping': 0, 'stopped': 0, 'zombie': 0, 'idle': 0, 'other': 0}
+    for proc in processes:
+        try:
+            state = proc.status()
+            if state in states:
+                states[state] += 1
+            else:
+                states['other'] += 1
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+
+    return {"total_processes": len(processes), "states": states}
+
+def get_logged_in_users():
+    users = psutil.users()
+    return [{"name": u.name, "terminal": u.terminal} for u in users]
+
+def last_system_log_lines():
+    try:
+        with open('/var/log/syslog', 'r') as syslog_file:
+            lines = syslog_file.readlines()
+        return lines[-20:]
+    except FileNotFoundError:
+        return ["System log file not found."]
+
+def last_users_logged():
+    try:
+        logins = os.popen("last -n 20").read()
+        users = []
+        seen = set()  # To track unique users
+        
+        for line in logins.strip().split("\n"):
+            columns = line.split()
+            if len(columns) < 2:
+                continue  
+            
+            if columns[-1] == "in" or columns[-1] == "running":
+                continue
+            
+            user = {"name": columns[0], "terminal": columns[1]}
+            unique_key = (columns[0], columns[1])
+            if unique_key not in seen:
+                seen.add(unique_key)
+                users.append(user)
+        
+        return users[:-1] #ignore wtmp begins line
+    
+    except Exception as e:
+        return f"Error fetching last logged users: {str(e)}"
+    
+def system_uptime():
+    uptime_seconds = psutil.boot_time()
+    uptime = datetime.now() - datetime.fromtimestamp(uptime_seconds)
+    days, remainder = divmod(uptime.total_seconds(), 86400)
+    hours, remainder = divmod(remainder, 3600)
+    minutes, _ = divmod(remainder, 60)
+    return f"{int(days)}d {int(hours)}h {int(minutes)}m"
 
 async def send_stats(request):
     """Send system stats to WebSocket client."""
@@ -119,7 +179,14 @@ def run():
 
 
 async def main():
-    print(await list_of_processes())
+    # print(await list_of_processes())
+    # print(process_summary())
+    # print(get_logged_in_users())
+    # print(last_system_log_lines())
+    # print(last_users_logged())
+    print(system_uptime())
+    print(await get_system_stats())
+
     # print("Server started at wss://localhost:8765")
     # run()
 
