@@ -41,6 +41,8 @@ export interface SystemInfo {
     sleeping: number;
     stopped: number;
     zombie: number;
+    idle: number;
+    other: number;
   };
   currentUsers: Array<{
     name: string;
@@ -48,11 +50,7 @@ export interface SystemInfo {
   }>;
   lastUsers: Array<{
     name: string;
-    time: string;
+    terminal: string;
   }>;
   uptime: string;
-}
-
-export interface SystemLog {
-  systemLog: string[];
 }

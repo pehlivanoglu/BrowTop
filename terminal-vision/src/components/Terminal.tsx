@@ -2,14 +2,20 @@ import React, { useRef, useState } from 'react';
 import ProcessList from './ProcessList';
 import MetricsPanel from './MetricsPanel';
 import SystemInfoPanel from './SystemInfoPanel';
-import { Process, SortConfig, SystemMetrics, SystemInfo } from '../types/terminal';
+import { Process, SortConfig, SystemMetrics, SystemInfo} from '../types/terminal';
+import SystemLogPanel from './SystemLogPanel';
 
 const Terminal = () => {
   const GB = 1024 * 1024 * 1024;
+  const MB = 1024 * 1024;
+
   const terminalRef = useRef<HTMLDivElement>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
+  const [isButtonToggled, setIsButtonToggled] = useState(true);
 
+  
   const [processes, setProcesses] = useState<Process[]>([]);
+  const [systemLogs, setSystemLogs] = useState<string[]>([]);
   const [metrics, setMetrics] = useState<SystemMetrics>({
     cpu: 0,
     memory: {
@@ -27,12 +33,33 @@ const Terminal = () => {
     }
   });
 
-  // WebSocket setup
-  const server_url = 'wss://localhost:8765/ws';
-  const ws = new WebSocket(server_url);
+  const [systemInfo, setSystemInfo] = useState<SystemInfo>({
+    processSummary: {
+      total: 0,
+      running: 0,
+      sleeping: 0,
+      stopped: 0,
+      zombie: 0,
+      idle:0 ,
+      other: 0
+    },
+    currentUsers: [
+      { name: 'none', terminal: 'none' },
+    ],
+    lastUsers: [
+      { name: 'none', terminal: 'none' }
+    ],
+    uptime: '0 days, 0 hours, 0 minutes'
+  });
+
+  const serverUrl = 'wss://localhost:8765/ws';
+  const ws = new WebSocket(serverUrl);
 
   ws.onopen = () => {
     console.info('Connected to WebSocket server');
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send('stats');
+    }
   };
 
   ws.onerror = (e: Event) => {
@@ -42,14 +69,14 @@ const Terminal = () => {
 
   ws.onmessage = (event) => {
     const message = JSON.parse(event.data);
-    // console.log('Message received from server', message);
 
     const messageType = message[0];
 
     if (messageType === 'stats') {
       updateSystemMetrics(message[1][0]);
       updateProcesses(message[1][1]);
-      console.log('stats', message[1][1]);
+      updateSystemInfo(message[1][2]);
+      updateSystemLogs(message[1][3]);
     }
   };
 
@@ -57,39 +84,65 @@ const Terminal = () => {
     console.error('Disconnected from WebSocket server');
   };
 
-  const updateProcesses = (newProcesses: Process[]) => {
+  const updateSystemLogs = (systemLogs) => {
+    setSystemLogs(systemLogs);
+  };
+
+  const updateSystemInfo = (systemInfo) => {
+    setSystemInfo({
+      processSummary: {
+        total: systemInfo[0].total_processes,
+        running: systemInfo[0].states.running,
+        sleeping: systemInfo[0].states.sleeping,
+        stopped: systemInfo[0].states.stopped,
+        zombie: systemInfo[0].states.zombie,
+        idle: systemInfo[0].states.idle,
+        other: systemInfo[0].states.other
+    },
+    currentUsers: systemInfo[1].map((user) => ({
+      name: user.name,
+      terminal: user.terminal
+    })),
+    lastUsers: systemInfo[2].map((user) => ({
+      name: user.name,
+      terminal: user.terminal
+    })),
+    uptime: systemInfo[3]
+    });
+  };
+  
+  const updateProcesses = (processes) => {
     setProcesses(
-      newProcesses.map((process) => ({
-        user: process.user.trim(),
+      processes.map((process) => ({
+        user: process.user,
         pid: process.pid,
         cpu: process.cpu,
         memory: process.memory,
-        vsz: parseFloat((Number(process.vsz)/1024).toFixed(1)),
-        rss: parseFloat((Number(process.rss)/1024).toFixed(1)),
-        tty: process.tty.trim(),
-        stat: process.stat.trim(),
-        start: process.start.trim(),
-        time: process.time.trim(),
-        command: process.command.length > 29 ? process.command.substring(0, 29) : process.command //process.command.trim()
+        vsz: parseFloat((Number(process.vsz)/MB).toFixed(1)),
+        rss: parseFloat((Number(process.rss)/MB).toFixed(1)),
+        tty: process.tty,
+        stat: process.stat,
+        start: process.start,
+        time: `${Math.floor(process.time / 60).toString().padStart(2, '0')}:${Math.floor(process.time % 60).toString().padStart(2, '0')}`,        command: process.command.length > 29 ? process.command.substring(0, 29) : process.command
       }))
     );
   };
 
-  const updateSystemMetrics = (stat) => {
+  const updateSystemMetrics = (systemMetrics) => {
     setMetrics({
-      cpu: stat.cpu,
+      cpu: systemMetrics.cpu,
       memory: {
-        used: Number(stat.memory.used)/GB,
-        total: Number(stat.memory.total)/GB,
+        used: Number(systemMetrics.memory.used)/GB,
+        total: Number(systemMetrics.memory.total)/GB,
       },
       disk: {
-        used: Number(stat.disk.used)/GB,
-        total: Number(stat.disk.total)/GB,
+        used: Number(systemMetrics.disk.used)/GB,
+        total: Number(systemMetrics.disk.total)/GB,
       },
       loadAvg: {
-        '1min': stat.load_avg[0],
-        '5min': stat.load_avg[1],
-        '15min': stat.load_avg[2]
+        '1min': systemMetrics.load_avg[0],
+        '5min': systemMetrics.load_avg[1],
+        '15min': systemMetrics.load_avg[2]
       }
     });
   };
@@ -100,36 +153,9 @@ const Terminal = () => {
     }
   };
 
-  const getProcesses = () => {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send('ps-aux');
-    }
+  const handleToggle = () => {
+    setIsButtonToggled(!isButtonToggled);
   };
-
-  // Fetch stats every 2 seconds
-  setInterval(getStats, 2000);
-
-  // Sample system info (replace with actual data if needed)
-  const systemInfo: SystemInfo = {
-    processSummary: {
-      total: 234,
-      running: 2,
-      sleeping: 232,
-      stopped: 0,
-      zombie: 0
-    },
-    currentUsers: [
-      { name: 'root', terminal: 'pts/0' },
-      { name: 'user1', terminal: 'pts/1' }
-    ],
-    lastUsers: [
-      { name: 'admin', time: '2024-02-20 15:30' },
-      { name: 'user1', time: '2024-02-20 14:25' }
-    ],
-    uptime: '5 days, 3 hours, 42 minutes'
-  };
-
-  
 
   const handleSort = (key: keyof Process) => {
     setSortConfig((prevConfig) => ({
@@ -156,6 +182,8 @@ const Terminal = () => {
     });
   };
 
+  setInterval(getStats, 1000);
+
   return (
     <div className="min-h-screen bg-terminal-bg p-4 font-mono text-terminal-text">
       <div className="max-w-[1400px] mx-auto flex gap-4">
@@ -166,17 +194,30 @@ const Terminal = () => {
         >
           <div className="mb-4 flex items-center">
             <span className="animate-pulse">▊</span>
-            <span className="ml-2">Process List - {new Date().toLocaleString()}</span>
+            <span className="ml-2">
+              {isButtonToggled ? 'System Logs - ' : 'Process List - '}
+              {new Date().toLocaleString()}
+          </span>
+            <button
+              className="ml-10 px-1 py-1 bg-black border rounded"
+              onClick={handleToggle}
+            >
+              {isButtonToggled ? '[See Process List]' : '[See Last 20 System Logs]'}
+            </button>
           </div>
           <div>
-            <ProcessList
-              processes={getSortedProcesses()}
-              sortConfig={sortConfig}
-              onSort={handleSort}
-            />
+            {isButtonToggled ? (
+              <SystemLogPanel logs={systemLogs} />
+            ) : (
+              <ProcessList
+                processes={getSortedProcesses()}
+                sortConfig={sortConfig}
+                onSort={handleSort}
+              />
+            )}
           </div>
         </div>
-
+  
         {/* Right Side Panels */}
         <div>
           <MetricsPanel metrics={metrics} />
@@ -185,6 +226,6 @@ const Terminal = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Terminal;
