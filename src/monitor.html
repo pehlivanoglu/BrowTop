@@ -20,7 +20,7 @@
     }
     .process-list, .system-info {
       padding: 10px;
-      border: 1px solid #00ff00;
+      /* Remove border */
     }
     .process-list {
       width: 72%;
@@ -121,7 +121,7 @@
     </div>
     <div class="system-info">
       <div class="metrics">
-        <h2>System Metrics</h2>
+        <h2>~~~~ System Metrics ~~~~</h2>
         <div id="cpu-usage" class="usage-text"></div>
         <div class="progress-bar">
           <span id="cpu-bar" style="width: 0%;"></span>
@@ -266,11 +266,11 @@
         <ul>
           <li>Total: ${processSummary.total_processes}</li>
           <li>Running: ${processSummary.states.running}</li>
-          <li>Sleeping: ${processSummary.states.running}</li>
+          <li>Sleeping: ${processSummary.states.sleeping}</li>
           <li>Stopped: ${processSummary.states.stopped}</li>
           <li>Zombie: ${processSummary.states.zombie}</li>
           <li>Idle: ${processSummary.states.idle}</li>
-          <li>Other: ${processSummary.total_processes - processSummary.states.idle - processSummary.states.running - processSummary.states.stopped}</li>
+          <li>Other: ${processSummary.states.other}</li>
         </ul>
         <h3>Current Users:</h3>
         <ul>${currentUsers.map((user) => `<li>${user.name} (${user.terminal})</li>`).join("")}</ul>

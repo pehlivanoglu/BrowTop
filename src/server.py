@@ -104,23 +104,14 @@ def last_system_log_lines():
 
 def last_users_logged():
     try:
-        logins = os.popen("last -n 20").read()
+        logins = os.popen("last -n 10").read()
         users = []
-        seen = set()  # To track unique users
-        
         for line in logins.strip().split("\n"):
             columns = line.split()
             if len(columns) < 2:
                 continue  
-            
-            if columns[-1] == "in" or columns[-1] == "running":
-                continue
-            
-            user = {"name": columns[0], "terminal": columns[1]}
-            unique_key = (columns[0], columns[1])
-            if unique_key not in seen:
-                seen.add(unique_key)
-                users.append(user)
+    
+            users.append({"name": columns[0], "terminal": columns[1]})
         
         return users[:-1] #ignore wtmp begins line
     
@@ -214,3 +205,4 @@ def run():
 if __name__ == "__main__":
     # print("Server started at ws://localhost:8765")
     run()
+    # print(last_users_logged())
