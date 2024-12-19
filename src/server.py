@@ -140,22 +140,39 @@ async def send_stats(request):
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
+    PASSWORD = os.getenv("SERVER_PSW", "395")
+    authenticated = False
+
     try:
         async for msg in ws:
-            if msg.type == web.WSMsgType.text and msg.data == "stats":
-                stats = await get_system_stats()
-                processes = await list_of_processes()
-                proc_summary = process_summary()
-                logged_in_users = get_logged_in_users()
-                last_users = last_users_logged()
-                uptime = system_uptime()
-                logs = last_system_log_lines()
+            if msg.type == web.WSMsgType.text:
+                if not authenticated:
+                    if msg.data.startswith("auth:"):
+                        client_password = msg.data.split("auth:")[1]
+                        if client_password == PASSWORD:
+                            authenticated = True
+                            await ws.send_str(json.dumps(["auth", "success"]))
+                        else:
+                            await ws.send_str(json.dumps(["auth", "failure"]))
+                            break
+                    else:
+                        await ws.send_str(json.dumps(["auth", "failure"]))
+                        break
+                else:
+                    # Only send data if authenticated
+                    if msg.data == "stats":
+                        stats = await get_system_stats()
+                        processes = await list_of_processes()
+                        proc_summary = process_summary()
+                        logged_in_users = get_logged_in_users()
+                        last_users = last_users_logged()
+                        uptime = system_uptime()
+                        logs = last_system_log_lines()
 
-                response = ["stats", [stats, processes, [proc_summary, logged_in_users, last_users, uptime], logs]]
-                await ws.send_str(json.dumps(response))
+                        response = ["stats", [stats, processes, [proc_summary, logged_in_users, last_users, uptime], logs]]
+                        await ws.send_str(json.dumps(response))
 
             elif msg.type == web.WSMsgType.binary:
-                # Ignore binary messages
                 continue
 
             elif msg.type == web.WSMsgType.close:
@@ -169,12 +186,13 @@ async def send_stats(request):
             await ws.close()
         return ws
 
+
 def create_ssl_context():
     """Create SSL context for secure WebSocket connection."""
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
 
-    cert_file = os.getenv("SSL_CERT", "cert/localhost.crt")
-    key_file = os.getenv("SSL_KEY", "cert/localhost.key")
+    cert_file = os.getenv("SSL_CERT", "../cert/localhost.crt")
+    key_file = os.getenv("SSL_KEY", "../cert/localhost.key")
 
     ssl_context.load_cert_chain(cert_file, key_file)
     return ssl_context

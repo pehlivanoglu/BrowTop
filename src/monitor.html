@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>System Metrics Dashboard</title>
+  <title>BrowTop</title>
   <style>
     body {
       font-family: "Courier New", Courier, monospace;
@@ -23,20 +23,29 @@
       border: 1px solid #00ff00;
     }
     .process-list {
-      width: 70%;
+      width: 72%;
       overflow: auto;
     }
     .system-info {
-      width: 25%;
+      width: 23%;
     }
     table {
       width: 100%;
       border-collapse: collapse;
+      table-layout: fixed;
     }
     table th, table td {
       border: 1px solid #00ff00;
-      padding: 5px;
+      padding: 10px;
       text-align: left;
+      word-wrap: break-word;
+      cursor: pointer;
+    }
+    table th.user, table td.user, table td.command, table th.command {
+      width: 15%; /* Make USER column wider */
+    }
+    table th.stat, table td.stat, table th.tty, table td.tty {
+      width: 5%; /* Make STAT and TTY columns narrower */
     }
     table th {
       background-color: #003300;
@@ -60,99 +69,258 @@
       text-align: center;
       margin-bottom: 10px;
     }
+    .usage-text {
+      text-align: center;
+      color: #00ff00;
+      margin-bottom: 5px;
+    }
+    .hide-when-logs {
+      display: none;
+    }
+    button {
+      background-color: #003300;
+      color: #00ff00;
+      border: 1px solid #00ff00;
+      padding: 10px 20px;
+      cursor: pointer;
+      font-family: "Courier New", Courier, monospace;
+    }
+    button:hover {
+      background-color: #00ff00;
+      color: #003300;
+    }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>Process List - 12/19/2024, 6:55:31 PM</h1>
-    <button>See Last 20 System Logs</button>
+    <h1 id="title">Process List</h1>
+    <button id="toggle-button">Go to System Logs</button>
   </div>
   <div class="container">
     <div class="process-list">
       <table>
-        <thead>
+        <thead id="table-headers">
           <tr>
-            <th>USER</th>
-            <th>PID</th>
-            <th>%CPU</th>
-            <th>%MEM</th>
-            <th>VSZ(MB)</th>
-            <th>RSS(MB)</th>
-            <th>TTY</th>
-            <th>STAT</th>
-            <th>START</th>
-            <th>TIME</th>
-            <th>COMMAND</th>
+            <th class="user" onclick="sortTable(0)">USER</th>
+            <th onclick="sortTable(1)">PID</th>
+            <th onclick="sortTable(2)">%CPU</th>
+            <th onclick="sortTable(3)">%MEM</th>
+            <th onclick="sortTable(4)">VSZ(MB)</th>
+            <th onclick="sortTable(5)">RSS(MB)</th>
+            <th class="tty" onclick="sortTable(6)">TTY</th>
+            <th class="stat" onclick="sortTable(7)">STAT</th>
+            <th onclick="sortTable(8)">START</th>
+            <th onclick="sortTable(9)">TIME</th>
+            <th class="command" onclick="sortTable(10)">COMMAND</th>
           </tr>
         </thead>
-        <tbody>
-          <!-- Repeatable Rows -->
-          <tr>
-            <td>root</td>
-            <td>1</td>
-            <td>0.0</td>
-            <td>0.1</td>
-            <td>0.2</td>
-            <td>0</td>
-            <td>?</td>
-            <td>S</td>
-            <td>00:26</td>
-            <td>00:11</td>
-            <td>systemd</td>
-          </tr>
-          <!-- Add more rows as needed -->
+        <tbody id="process-table">
+          
         </tbody>
       </table>
     </div>
     <div class="system-info">
       <div class="metrics">
         <h2>System Metrics</h2>
-        <p>CPU Usage</p>
+        <div id="cpu-usage" class="usage-text"></div>
         <div class="progress-bar">
-          <span style="width: 30.8%;"></span>
+          <span id="cpu-bar" style="width: 0%;"></span>
         </div>
-        <p>Memory Usage</p>
+        <br>
+        <br>
+        <div id="memory-usage" class="usage-text"></div>
         <div class="progress-bar">
-          <span style="width: 36.0%;"></span>
+          <span id="memory-bar" style="width: 0%;"></span>
         </div>
-        <p>Disk Usage</p>
+        <br>
+        <br>
+        <div id="disk-usage" class="usage-text"></div>
         <div class="progress-bar">
-          <span style="width: 38.3%;"></span>
+          <span id="disk-bar" style="width: 0%;"></span>
         </div>
-        <p>Load Average</p>
-        <ul>
-          <li>1min: 2.11</li>
-          <li>5min: 1.28</li>
-          <li>15min: 1.00</li>
+        <br>
+        <h3>Load Average</h3>
+        <ul id="load-avg">
+          <li>1min: 0</li>
+          <li>5min: 0</li>
+          <li>15min: 0</li>
         </ul>
       </div>
       <div class="info">
-        <h2>System Information</h2>
-        <p>Process Summary:</p>
-        <ul>
-          <li>Total: 420</li>
-          <li>Running: 3</li>
-          <li>Sleeping: 276</li>
-          <li>Stopped: 0</li>
-          <li>Zombie: 1</li>
-          <li>Idle: 140</li>
-          <li>Other: 0</li>
-        </ul>
-        <p>Current Users:</p>
-        <ul>
-          <li>pehlivanoğlu (tty2)</li>
-        </ul>
-        <p>Last 10 Users:</p>
-        <ul>
-          <li>pehlivanoğlu (tty2)</li>
-          <li>reboot (system)</li>
-        </ul>
-        <p>System Uptime: 1d 18h 28m</p>
+        <div id="system-info"></div>
       </div>
     </div>
   </div>
+
   <script>
+    const serverUrl = 'wss://' + location.host + location.pathname.replace('monitor', 'ws');
+    const ws = new WebSocket(serverUrl);
+
+    const title = document.getElementById("title");
+    const toggleButton = document.getElementById("toggle-button");
+    const processTable = document.getElementById("process-table");
+    const cpuBar = document.getElementById("cpu-bar");
+    const memoryBar = document.getElementById("memory-bar");
+    const diskBar = document.getElementById("disk-bar");
+    const loadAvg = document.getElementById("load-avg");
+    const systemInfoDiv = document.getElementById("system-info");
+
+    let showLogs = false;
+    let sortOrder = {};
+    let currentSortColumn = null;
+    let isAscending = true;
+    let isAuthenticated = false;
+
+    function requestPassword() {
+      const password = prompt("Enter password:");
+      ws.send(`auth:${password}`);
+    }
+
+    ws.onopen = () => {
+      console.log("Connected to WebSocket server");
+      requestPassword();
+    };
+
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      const [messageType, data] = message;
+
+      if (messageType === "auth") {
+        if (data === "success") {
+          isAuthenticated = true;
+          console.log("Authentication successful!");
+          ws.send("stats");
+        } else {
+          alert("Authentication failed. Refresh and try again.");
+          ws.close();
+        }
+      } else if (messageType === "stats" && isAuthenticated) {
+        updateMetrics(data[0]);
+        updateProcesses(data[1]);
+        updateSystemInfo(data[2]);
+        if (showLogs) updateSystemLogs(data[3]);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error("WebSocket Error: ", error);
+    };
+
+    ws.onclose = () => {
+        console.error("WebSocket disconnected");
+    };
+
+    function updateMetrics(metrics) {
+      const cpuUsage = `${metrics.cpu}%`;
+      const memoryUsage = `${(metrics.memory.used / (1024 * 1024 * 1024)).toFixed(1)} GB / ${(metrics.memory.total / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+      const diskUsage = `${(metrics.disk.used / (1024 * 1024 * 1024)).toFixed(1)} GB / ${(metrics.disk.total / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+
+      cpuBar.style.width = cpuUsage;
+      memoryBar.style.width = `${(metrics.memory.used / metrics.memory.total) * 100}%`;
+      diskBar.style.width = `${(metrics.disk.used / metrics.disk.total) * 100}%`;
+
+      document.getElementById("cpu-usage").textContent = `CPU Usage: ${cpuUsage}`;
+      document.getElementById("memory-usage").textContent = `Memory Usage: ${memoryUsage}`;
+      document.getElementById("disk-usage").textContent = `Disk Usage: ${diskUsage}`;
+
+      loadAvg.innerHTML = `
+        <li>1min: ${metrics.load_avg[0].toFixed(2)}</li>
+        <li>5min: ${metrics.load_avg[1].toFixed(2)}</li>
+        <li>15min: ${metrics.load_avg[2].toFixed(2)}</li>
+      `;
+    }
+
+    function updateProcesses(processes) {
+      processTable.innerHTML = processes
+        .map(
+          (proc) => `
+          <tr>
+            <td class="user">${proc.user}</td>
+            <td>${proc.pid}</td>
+            <td>${proc.cpu}</td>
+            <td>${proc.memory}</td>
+            <td>${proc.vsz}</td>
+            <td>${proc.rss}</td>
+            <td class="tty">${proc.tty}</td>
+            <td class="stat">${proc.stat}</td>
+            <td>${proc.start}</td>
+            <td>${Math.floor(proc.time / 60).toString().padStart(2, '0')}:${Math.floor(proc.time % 60).toString().padStart(2, '0')}</td>
+            <td>${proc.command}</td>
+          </tr>
+        `
+        )
+        .join("");
+
+      if (currentSortColumn !== null) {
+        sortTable(currentSortColumn, false);
+      }
+    }
+
+    function updateSystemInfo(info) {
+      processSummary = info[0];
+      currentUsers = info[1];
+      lastUsers = info[2];
+      uptime = info[3];
+      systemInfoDiv.innerHTML = `
+        <h3>Process Summary:</h3>
+        <ul>
+          <li>Total: ${processSummary.total_processes}</li>
+          <li>Running: ${processSummary.states.running}</li>
+          <li>Sleeping: ${processSummary.states.running}</li>
+          <li>Stopped: ${processSummary.states.stopped}</li>
+          <li>Zombie: ${processSummary.states.zombie}</li>
+          <li>Idle: ${processSummary.states.idle}</li>
+          <li>Other: ${processSummary.total_processes - processSummary.states.idle - processSummary.states.running - processSummary.states.stopped}</li>
+        </ul>
+        <h3>Current Users:</h3>
+        <ul>${currentUsers.map((user) => `<li>${user.name} (${user.terminal})</li>`).join("")}</ul>
+        <h3>Last Users:</h3>
+        <ul>${lastUsers.map((user) => `<li>${user.name} (${user.terminal})</li>`).join("")}</ul>
+        <h3>System Uptime: ${uptime}</h3>
+      `;
+    }
+
+    function updateSystemLogs(logs) {
+      processTable.innerHTML = logs.reverse().map((log) => `<tr><td colspan="11">${log}</td></tr>`).join("");
+    }
+
+    toggleButton.addEventListener("click", () => {
+      showLogs = !showLogs;
+      ws.send("stats");
+      if (showLogs) {
+            document.getElementById('table-headers').classList.add('hide-when-logs');
+      } else {
+            document.getElementById('table-headers').classList.remove('hide-when-logs');
+      }
+      title.textContent = showLogs ? "System Logs" : "Process List";
+      toggleButton.textContent = showLogs ? "Go to Process List" : "Go to System Logs";
+    });
+
+    function sortTable(columnIndex, toggleOrder = true) {
+      const table = document.getElementById("process-table");
+      const rows = Array.from(table.rows);
+
+      if (toggleOrder) {
+        isAscending = currentSortColumn === columnIndex ? !isAscending : true;
+        currentSortColumn = columnIndex;
+      }
+
+      rows.sort((a, b) => {
+        const cellA = a.cells[columnIndex].innerText.toLowerCase();
+        const cellB = b.cells[columnIndex].innerText.toLowerCase();
+
+        if (!isNaN(cellA) && !isNaN(cellB)) {
+          return isAscending ? cellA - cellB : cellB - cellA;
+        }
+
+        return isAscending ? cellA.localeCompare(cellB) : cellB.localeCompare(cellA);
+      });
+
+      table.innerHTML = "";
+      rows.forEach(row => table.appendChild(row));
+    }
+
+    setInterval(() => ws.send("stats"), 1000);
   </script>
 </body>
 </html>
-

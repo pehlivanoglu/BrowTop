@@ -1,0 +1,15 @@
+services:
+  browtop-ap:
+    build:
+      dockerfile: Dockerfile
+    container_name: browtop-ap
+    # pid: host # for getting the host's ps aux, it is not a good approach but the only way to get the host's ps aux
+    ports:
+      - "1006:8765"
+    tty: true
+    # volumes:
+    #   - /var/log/syslog:/var/log/syslog # for getting the host's syslog
+    environment:
+      - SSL_CERT=/app/cert/localhost.crt
+      - SSL_KEY=/app/cert/localhost.key
+      - SERVER_PSW=395
