@@ -137,36 +137,51 @@ def system_uptime():
 
 async def send_stats(request):
     """Send system stats to WebSocket client."""
-    print("Client connected")
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
-    async for msg in ws:
-        if msg.type == web.WSMsgType.text and msg.data == "stats":
-            data = await get_system_stats()
-            response = ["stats", data]
-            await ws.send_str(json.dumps(response))
-        elif msg.type == web.WSMsgType.binary:
-            # Ignore binary messages
-            continue
-        elif msg.type == web.WSMsgType.close:
-            break
+    try:
+        async for msg in ws:
+            if msg.type == web.WSMsgType.text and msg.data == "stats":
+                stats = await get_system_stats()
+                processes = await list_of_processes()
+                proc_summary = process_summary()
+                logged_in_users = get_logged_in_users()
+                last_users = last_users_logged()
+                uptime = system_uptime()
+                logs = last_system_log_lines()
 
-    return ws
+                response = ["stats", [stats, processes, [proc_summary, logged_in_users, last_users, uptime], logs]]
+                await ws.send_str(json.dumps(response))
 
+            elif msg.type == web.WSMsgType.binary:
+                # Ignore binary messages
+                continue
+
+            elif msg.type == web.WSMsgType.close:
+                break
+
+    except Exception as e:
+        print(f"Error during WebSocket communication: {str(e)}")
+
+    finally:
+        if not ws.closed:
+            await ws.close()
+        return ws
 
 def create_ssl_context():
     """Create SSL context for secure WebSocket connection."""
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    cert_file = pathlib.Path(__file__).parents[1].joinpath("app/cert/localhost.crt")
-    key_file = pathlib.Path(__file__).parents[1].joinpath("app/cert/localhost.key")
+
+    cert_file = os.getenv("SSL_CERT", "cert/localhost.crt")
+    key_file = os.getenv("SSL_KEY", "cert/localhost.key")
+
     ssl_context.load_cert_chain(cert_file, key_file)
     return ssl_context
 
-
 def run():
     """Start WebSocket server."""
-    # ssl_context = create_ssl_context()
+    ssl_context = create_ssl_context()
     app = web.Application()
     app.add_routes(
         [
@@ -175,8 +190,9 @@ def run():
             web.get("/hello", hello),
         ]
     )
-    web.run_app(app, port=8765)#, ssl_context=ssl_context)
+    web.run_app(app, port=8765, ssl_context=ssl_context)
+
 
 if __name__ == "__main__":
-    print("Server started at wss://localhost:8765")
+    # print("Server started at ws://localhost:8765")
     run()

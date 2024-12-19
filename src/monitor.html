@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Metrics Dashboard</title>
+  <style>
+    body {
+      font-family: "Courier New", Courier, monospace;
+      color: #00ff00;
+      background-color: #000;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      padding: 10px;
+    }
+    .process-list, .system-info {
+      padding: 10px;
+      border: 1px solid #00ff00;
+    }
+    .process-list {
+      width: 70%;
+      overflow: auto;
+    }
+    .system-info {
+      width: 25%;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table th, table td {
+      border: 1px solid #00ff00;
+      padding: 5px;
+      text-align: left;
+    }
+    table th {
+      background-color: #003300;
+    }
+    .metrics {
+      margin-bottom: 20px;
+    }
+    .progress-bar {
+      background-color: #003300;
+      border: 1px solid #00ff00;
+      position: relative;
+      height: 20px;
+      width: 100%;
+    }
+    .progress-bar span {
+      display: block;
+      height: 100%;
+      background-color: #00ff00;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Process List - 12/19/2024, 6:55:31 PM</h1>
+    <button>See Last 20 System Logs</button>
+  </div>
+  <div class="container">
+    <div class="process-list">
+      <table>
+        <thead>
+          <tr>
+            <th>USER</th>
+            <th>PID</th>
+            <th>%CPU</th>
+            <th>%MEM</th>
+            <th>VSZ(MB)</th>
+            <th>RSS(MB)</th>
+            <th>TTY</th>
+            <th>STAT</th>
+            <th>START</th>
+            <th>TIME</th>
+            <th>COMMAND</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Repeatable Rows -->
+          <tr>
+            <td>root</td>
+            <td>1</td>
+            <td>0.0</td>
+            <td>0.1</td>
+            <td>0.2</td>
+            <td>0</td>
+            <td>?</td>
+            <td>S</td>
+            <td>00:26</td>
+            <td>00:11</td>
+            <td>systemd</td>
+          </tr>
+          <!-- Add more rows as needed -->
+        </tbody>
+      </table>
+    </div>
+    <div class="system-info">
+      <div class="metrics">
+        <h2>System Metrics</h2>
+        <p>CPU Usage</p>
+        <div class="progress-bar">
+          <span style="width: 30.8%;"></span>
+        </div>
+        <p>Memory Usage</p>
+        <div class="progress-bar">
+          <span style="width: 36.0%;"></span>
+        </div>
+        <p>Disk Usage</p>
+        <div class="progress-bar">
+          <span style="width: 38.3%;"></span>
+        </div>
+        <p>Load Average</p>
+        <ul>
+          <li>1min: 2.11</li>
+          <li>5min: 1.28</li>
+          <li>15min: 1.00</li>
+        </ul>
+      </div>
+      <div class="info">
+        <h2>System Information</h2>
+        <p>Process Summary:</p>
+        <ul>
+          <li>Total: 420</li>
+          <li>Running: 3</li>
+          <li>Sleeping: 276</li>
+          <li>Stopped: 0</li>
+          <li>Zombie: 1</li>
+          <li>Idle: 140</li>
+          <li>Other: 0</li>
+        </ul>
+        <p>Current Users:</p>
+        <ul>
+          <li>pehlivanoğlu (tty2)</li>
+        </ul>
+        <p>Last 10 Users:</p>
+        <ul>
+          <li>pehlivanoğlu (tty2)</li>
+          <li>reboot (system)</li>
+        </ul>
+        <p>System Uptime: 1d 18h 28m</p>
+      </div>
+    </div>
+  </div>
+  <script>
+  </script>
+</body>
+</html>
+
