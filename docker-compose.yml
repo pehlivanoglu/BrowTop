@@ -1,14 +1,16 @@
 services:
-  browtop-ap:
+  browtop-1006:
     build:
       dockerfile: Dockerfile
-    container_name: browtop-ap
-    # pid: host # for getting the host's ps aux, it is not a good approach but the only way to get the host's ps aux
+    container_name: azra-ahmet
+    pid: host # for getting the host's ps aux, it is not a good approach but a way to get the host's ps aux
     ports:
       - "1006:8765"
     tty: true
-    # volumes:
-    #   - /var/log/syslog:/var/log/syslog # for getting the host's syslog
+    volumes:
+      - /var/run/utmp:/var/run/utmp:ro  # for getting the host's current users
+      - /var/log/wtmp:/var/log/wtmp:ro  # for getting the host's last users
+      - /var/log/syslog:/var/log/syslog # for getting the host's syslog
     environment:
       - SSL_CERT=/app/cert/localhost.crt
       - SSL_KEY=/app/cert/localhost.key

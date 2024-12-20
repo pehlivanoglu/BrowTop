@@ -4,6 +4,7 @@ import json
 import pathlib
 import ssl
 import os
+import base64
 
 import psutil
 from aiohttp import web
@@ -104,23 +105,14 @@ def last_system_log_lines():
 
 def last_users_logged():
     try:
-        logins = os.popen("last -n 20").read()
+        logins = os.popen("last -n 10").read()
         users = []
-        seen = set()  # To track unique users
-        
         for line in logins.strip().split("\n"):
             columns = line.split()
             if len(columns) < 2:
                 continue  
-            
-            if columns[-1] == "in" or columns[-1] == "running":
-                continue
-            
-            user = {"name": columns[0], "terminal": columns[1]}
-            unique_key = (columns[0], columns[1])
-            if unique_key not in seen:
-                seen.add(unique_key)
-                users.append(user)
+    
+            users.append({"name": columns[0], "terminal": columns[1]})
         
         return users[:-1] #ignore wtmp begins line
     
@@ -135,6 +127,11 @@ def system_uptime():
     minutes, _ = divmod(remainder, 60)
     return f"{int(days)}d {int(hours)}h {int(minutes)}m"
 
+def base64_decode(encoded_str):
+    decoded_bytes = base64.b64decode(encoded_str)
+    decoded_str = decoded_bytes.decode('utf-8')
+    return decoded_str
+
 async def send_stats(request):
     """Send system stats to WebSocket client."""
     ws = web.WebSocketResponse()
@@ -148,7 +145,8 @@ async def send_stats(request):
             if msg.type == web.WSMsgType.text:
                 if not authenticated:
                     if msg.data.startswith("auth:"):
-                        client_password = msg.data.split("auth:")[1]
+                        encoded_client_password = msg.data.split("auth:")[1]
+                        client_password = base64_decode(encoded_client_password)
                         if client_password == PASSWORD:
                             authenticated = True
                             await ws.send_str(json.dumps(["auth", "success"]))

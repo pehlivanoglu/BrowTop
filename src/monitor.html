@@ -20,7 +20,6 @@
     }
     .process-list, .system-info {
       padding: 10px;
-      border: 1px solid #00ff00;
     }
     .process-list {
       width: 72%;
@@ -42,10 +41,10 @@
       cursor: pointer;
     }
     table th.user, table td.user, table td.command, table th.command {
-      width: 15%; /* Make USER column wider */
+      width: 15%;
     }
     table th.stat, table td.stat, table th.tty, table td.tty {
-      width: 5%; /* Make STAT and TTY columns narrower */
+      width: 5%;
     }
     table th {
       background-color: #003300;
@@ -94,7 +93,7 @@
 <body>
   <div class="header">
     <h1 id="title">Process List</h1>
-    <button id="toggle-button">Go to System Logs</button>
+    <button id="toggle-button">Go to System Logs (last 20)</button>
   </div>
   <div class="container">
     <div class="process-list">
@@ -121,7 +120,7 @@
     </div>
     <div class="system-info">
       <div class="metrics">
-        <h2>System Metrics</h2>
+        <h2>~~~~ System Metrics ~~~~</h2>
         <div id="cpu-usage" class="usage-text"></div>
         <div class="progress-bar">
           <span id="cpu-bar" style="width: 0%;"></span>
@@ -171,9 +170,14 @@
     let isAscending = true;
     let isAuthenticated = false;
 
+    function base64Encode(str) {
+      return btoa(str);
+    }
+
     function requestPassword() {
       const password = prompt("Enter password:");
-      ws.send(`auth:${password}`);
+      const encodedPassword = base64Encode(password);
+      ws.send(`auth:${encodedPassword}`);
     }
 
     ws.onopen = () => {
@@ -266,11 +270,11 @@
         <ul>
           <li>Total: ${processSummary.total_processes}</li>
           <li>Running: ${processSummary.states.running}</li>
-          <li>Sleeping: ${processSummary.states.running}</li>
+          <li>Sleeping: ${processSummary.states.sleeping}</li>
           <li>Stopped: ${processSummary.states.stopped}</li>
           <li>Zombie: ${processSummary.states.zombie}</li>
           <li>Idle: ${processSummary.states.idle}</li>
-          <li>Other: ${processSummary.total_processes - processSummary.states.idle - processSummary.states.running - processSummary.states.stopped}</li>
+          <li>Other: ${processSummary.states.other}</li>
         </ul>
         <h3>Current Users:</h3>
         <ul>${currentUsers.map((user) => `<li>${user.name} (${user.terminal})</li>`).join("")}</ul>
@@ -292,8 +296,8 @@
       } else {
             document.getElementById('table-headers').classList.remove('hide-when-logs');
       }
-      title.textContent = showLogs ? "System Logs" : "Process List";
-      toggleButton.textContent = showLogs ? "Go to Process List" : "Go to System Logs";
+      title.textContent = showLogs ? "System Logs (last 20)" : "Process List";
+      toggleButton.textContent = showLogs ? "Go to Process List" : "Go to System Logs (last 20)";
     });
 
     function sortTable(columnIndex, toggleOrder = true) {

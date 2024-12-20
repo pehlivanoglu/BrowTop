@@ -3,3 +3,4 @@ bin/
 pyvenv.cfg
 venv/
 .idea/
+password
