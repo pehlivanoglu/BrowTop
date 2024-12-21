@@ -1,6 +1,3 @@
-# GitHub Repo
-https://github.com/pehlivanoglu/BrowTop
-
 # BrowTop - a Browser-based System Performance Monitor
 
 BrowTop is a graphical user interface for visualizing your server's System Information such as active processes, CPU and memory usage, active users etc.
@@ -9,7 +6,7 @@ BrowTop is a graphical user interface for visualizing your server's System Infor
 1. You can create locally-trusted TLS certificates by running the following command:
 ```bash
 mkcert -install
-mkcert -key-file cert/localhost.key -cert-file cert/localhost.crt localhost
+mkcert -key-file cert/localhost.key -cert-file cert/localhost.crt slocalhost
 ```
 
 2. Since it is dockerized, simple compose command is enough to run:
@@ -20,6 +17,8 @@ docker compose up -d # -d detached mode
 This command will start the browtop server on ```https://localhost:1006```
 
 BrowTop monitor is hosted on ```https://localhost:1006/monitor```
+
+> **_NOTE:_**  The default password is "395". Can be changed from docker-compose.yml, declared as environment variable.
 
 ## Brief Documentation
 ### 1 - monitor.html:
@@ -74,3 +73,7 @@ Defines the Docker service for BrowTop.
     -   Maps port `1006` on the host to port `8765` in the container.
 4.  **Environment Variables:**
     -   Passes SSL certificate paths and server password to the container.
+
+## Contributors
+- Azra Açıl (github.com/azraa4)
+- Ahmet Pehlivanoğlu (github.com/pehlivanoglu)

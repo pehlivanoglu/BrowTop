@@ -137,7 +137,7 @@ async def send_stats(request):
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 
-    PASSWORD = os.getenv("SERVER_PSW", "395")
+    PASSWORD = os.getenv("SERVER_PSW")
     authenticated = False
 
     try:
